@@ -1,0 +1,156 @@
+#include <iostream>
+#include <fstream>
+#include <unordered_map>
+#include <string>
+#include <iomanip>
+
+using namespace std;
+
+class OnlineBanking {
+private:
+    struct Account {
+        string password;
+        double balance;
+    };
+    
+    unordered_map<string, Account> accounts;
+    string currentUser;
+    
+    bool authenticate(const string& username, const string& password) {
+        return accounts.find(username) != accounts.end() && accounts[username].password == password;
+    }
+    
+    void saveData() {
+        ofstream file("bank_data.txt");
+        for (auto& [username, account] : accounts) {
+            file << username << " " << account.password << " " << account.balance << "\n";
+        }
+        file.close();
+    }
+    
+    void loadData() {
+        ifstream file("bank_data.txt");
+        string username, password;
+        double balance;
+        while (file >> username >> password >> balance) {
+            accounts[username] = {password, balance};
+        }
+        file.close();
+    }
+    
+public:
+    OnlineBanking() { loadData(); }
+    ~OnlineBanking() { saveData(); }
+    
+    void createAccount(const string& username, const string& password) {
+        if (accounts.find(username) != accounts.end()) {
+            cout << "\nAccount already exists!\n";
+            return;
+        }
+        accounts[username] = {password, 0.0};
+        cout << "\nAccount created successfully!\n";
+    }
+    
+    bool login(const string& username, const string& password) {
+        if (authenticate(username, password)) {
+            currentUser = username;
+            cout << "\nLogin successful!\n";
+            return true;
+        }
+        cout << "\nInvalid username or password!\n";
+        return false;
+    }
+    
+    void deposit(double amount) {
+        if (amount > 0) {
+            accounts[currentUser].balance += amount;
+            cout << "\nAmount deposited successfully! New balance: $" << fixed << setprecision(2) << accounts[currentUser].balance << "\n";
+        } else {
+            cout << "\nInvalid deposit amount!\n";
+        }
+    }
+    
+    void withdraw(double amount) {
+        if (amount > 0 && accounts[currentUser].balance >= amount) {
+            accounts[currentUser].balance -= amount;
+            cout << "\nAmount withdrawn successfully! New balance: $" << fixed << setprecision(2) << accounts[currentUser].balance << "\n";
+        } else {
+            cout << "\nInsufficient balance or invalid withdrawal amount!\n";
+        }
+    }
+    
+    void transfer(const string& recipient, double amount) {
+        if (accounts.find(recipient) == accounts.end()) {
+            cout << "\nRecipient account does not exist!\n";
+            return;
+        }
+        if (amount > 0 && accounts[currentUser].balance >= amount) {
+            accounts[currentUser].balance -= amount;
+            accounts[recipient].balance += amount;
+            cout << "\nTransfer successful! New balance: $" << fixed << setprecision(2) << accounts[currentUser].balance << "\n";
+        } else {
+            cout << "\nInsufficient balance or invalid transfer amount!\n";
+        }
+    }
+    
+    void checkBalance() {
+        cout << "\nCurrent balance: $" << fixed << setprecision(2) << accounts[currentUser].balance << "\n";
+    }
+};
+
+int main() {
+    OnlineBanking bank;
+    int choice;
+    string username, password, recipient;
+    double amount;
+    
+    do {
+        cout << "\n----- Online Banking System -----\n";
+        cout << "1. Create Account\n2. Login\n3. Deposit\n4. Withdraw\n5. Transfer\n6. Check Balance\n7. Exit\nEnter your choice: ";
+        cin >> choice;
+        
+        switch (choice) {
+            case 1:
+                cout << "\nEnter username: ";
+                cin >> username;
+                cout << "Enter password: ";
+                cin >> password;
+                bank.createAccount(username, password);
+                break;
+            case 2:
+                cout << "\nEnter username: ";
+                cin >> username;
+                cout << "Enter password: ";
+                cin >> password;
+                bank.login(username, password);
+                break;
+            case 3:
+                cout << "\nEnter amount to deposit: ";
+                cin >> amount;
+                bank.deposit(amount);
+                break;
+            case 4:
+                cout << "\nEnter amount to withdraw: ";
+                cin >> amount;
+                bank.withdraw(amount);
+                break;
+            case 5:
+                cout << "\nEnter recipient username: ";
+                cin >> recipient;
+                cout << "Enter amount to transfer: ";
+                cin >> amount;
+                bank.transfer(recipient, amount);
+                break;
+            case 6:
+                bank.checkBalance();
+                break;
+            case 7:
+                cout << "\nThank you for using the Online Banking System. Goodbye!\n";
+                break;
+            default:
+                cout << "\nInvalid choice! Please try again.\n";
+        }
+    } while (choice != 7);
+    
+    return 0;
+}
